@@ -131,10 +131,29 @@ export default function IdentityScene() {
 
       // Scroll sequence animation
       if (!sequenceFailed) {
-        const obj = { frame: 0 };
-        gsap.to(obj, {
-          frame: FRAME_COUNT - 1,
-          snap: 'frame',
+        const scrollObj = { frame: 0 };
+        const idleObj = { frame: 0 };
+
+        const updateFrame = () => {
+          // Combine idle and scroll progress
+          const totalFrame = Math.round(scrollObj.frame) + Math.floor(idleObj.frame);
+          let finalFrame = totalFrame % FRAME_COUNT;
+          if (finalFrame < 0) finalFrame += FRAME_COUNT;
+          renderFrame(finalFrame);
+        };
+
+        // Idle autoplay (24fps for 480 frames = 20s)
+        gsap.to(idleObj, {
+          frame: FRAME_COUNT,
+          duration: 20,
+          ease: 'none',
+          repeat: -1,
+          onUpdate: updateFrame
+        });
+
+        // Scroll scrubbing (advances 1 full loop over the scroll distance)
+        gsap.to(scrollObj, {
+          frame: FRAME_COUNT,
           ease: 'none',
           scrollTrigger: {
             trigger: containerRef.current,
@@ -142,9 +161,7 @@ export default function IdentityScene() {
             end: 'bottom bottom',
             scrub: true,
           },
-          onUpdate: () => {
-            renderFrame(Math.round(obj.frame));
-          }
+          onUpdate: updateFrame
         });
       }
     }, containerRef);
