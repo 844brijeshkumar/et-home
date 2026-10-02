@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+  
+  /* Luxury Dark Palette */
+  --color-et-dark-gold-onyx: #100E08;
+  --color-et-royal-emerald: #071F17;
+  --color-et-velvet-amethyst: #160D1E;
+  --color-et-velvet-ruby: #380B12;
+  --color-et-warm-champagne: #18140B;
+  
+  --color-et-obsidian: #050505;
+  --color-et-ivory: #F0F0F0;
+  --color-et-muted-gold: #C5A059;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --mouse-x: 50vw;
+    --mouse-y: 50vh;
+  }
+
+  body {
+    background-color: var(--color-et-dark-gold-onyx);
+    color: var(--color-et-ivory);
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  /* Obsidian Glass */
+  .glass-obsidian {
+    background: rgba(17, 17, 17, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 4px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Hide Scrollbar but allow scrolling */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
