@@ -4,57 +4,12 @@ import { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
 
-import StandardBase from '../templates/Standard/index';
-import SilverBase from '../templates/Silver/index';
-import GoldBase from '../templates/Gold/index';
-import PremiumBase from '../templates/Premium/index';
-import LuxuryBase from '../templates/Luxury/index';
-import EliteBase from '../templates/Elite/index';
-import GenerationalBase from '../templates/Generational/index';
+import StandardUI from '../templates/Standard/index';
+import PrivateUI from '../templates/Private/index';
+import VIPUI from '../templates/VIP/index';
+import GenerationalUI from '../templates/Generational/index';
 
-const MOCK_PATRON_DATA = {
-  owner: { photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop', name: 'Alaric Thorne', location: 'London, UK' },
-  product: { category: 'Identity', photo: 'https://images.unsplash.com/photo-1614165936126-2ed18e471b3b?w=200&h=200&fit=crop', name: 'Obsidian Key', model: 'Series II', type: 'Hardware', spend_rate: 100, price: 25000 },
-  next_tier: 1000
-};
-
-const STATUS_TIERS = [
-  { 
-    id: 'standard', 
-    label: 'STANDARD', 
-    Component: StandardBase
-  },
-  { 
-    id: 'silver', 
-    label: 'SILVER', 
-    Component: SilverBase
-  },
-  { 
-    id: 'gold', 
-    label: 'GOLD', 
-    Component: GoldBase
-  },
-  { 
-    id: 'premium', 
-    label: 'PREMIUM', 
-    Component: PremiumBase
-  },
-  { 
-    id: 'luxury', 
-    label: 'LUXURY', 
-    Component: LuxuryBase
-  },
-  { 
-    id: 'elite', 
-    label: 'ELITE', 
-    Component: EliteBase
-  },
-  { 
-    id: 'generational', 
-    label: 'GENERATIONAL', 
-    Component: GenerationalBase
-  },
-];
+const STATES = ['STANDARD', 'PRIVATE', 'VIP', 'GENERATIONAL'];
 
 export default function SyndicateScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,45 +24,74 @@ export default function SyndicateScene() {
           trigger: containerRef.current,
           start: 'top top',
           end: 'bottom bottom',
-          pin: '.syndicate-sticky',
+          pin: '.syndicate-pin',
+          pinSpacing: false,
           scrub: true,
         }
       });
 
-      const totalTiers = STATUS_TIERS.length;
+      const statesCount = STATES.length;
       
-      STATUS_TIERS.forEach((tier, i) => {
-        // Calculate relative times on the timeline (0 to 1 for each tier block)
-        const startTime = i;
-        const endTime = i + 1;
+      for (let i = 0; i < statesCount; i++) {
+        const stepTime = i;
         
-        // 1. Fade IN the tier UI
+        // Highlight current text in dial
+        tl.to(`.step-text-${i}`, {
+          color: '#F0F0F0',
+          scale: 1.05,
+          x: 5,
+          duration: 0.2
+        }, stepTime);
+        
+        tl.to(`.step-dot-${i}`, {
+          backgroundColor: '#F0F0F0',
+          duration: 0.2
+        }, stepTime);
+        
+        // Fade in current UI
         if (i > 0) {
-          tl.to(`.tier-ui-${i}`, { opacity: 1, duration: 0.2 }, startTime);
-        }
-        
-        // 2. Fade OUT the previous tier UI
-        if (i < totalTiers - 1) {
-          tl.to(`.tier-ui-${i}`, { opacity: 0, duration: 0.2 }, endTime - 0.2);
+          tl.to(`.ui-state-${i}`, { opacity: 1, duration: 0.3 }, stepTime);
         }
 
-        // 3. Move the selector dot (animate its top position continuously)
-        if (i < totalTiers - 1) {
-          const endPercent = ((i + 1) / (totalTiers - 1)) * 100;
-          tl.to('.syndicate-selector-dot', 
-            { top: `${endPercent}%`, duration: 1, ease: 'none' }, 
-            startTime
-          );
+        // Fade out previous text & UI (except when on the last step)
+        if (i < statesCount - 1) {
+          // move dot down
+          const nextPercent = ((i + 1) / (statesCount - 1)) * 100;
+          
+          tl.to('.active-dot', {
+            top: `${nextPercent}%`,
+            duration: 1,
+            ease: 'none'
+          }, stepTime);
+
+          // fade out current state near the end of this scroll block
+          tl.to(`.step-text-${i}`, {
+            color: 'rgba(240, 240, 240, 0.3)',
+            scale: 1,
+            x: 0,
+            duration: 0.2
+          }, stepTime + 0.8);
+          
+          tl.to(`.step-dot-${i}`, {
+            backgroundColor: 'rgba(240, 240, 240, 0.2)',
+            duration: 0.2
+          }, stepTime + 0.8);
+          
+          tl.to(`.ui-state-${i}`, { opacity: 0, duration: 0.3 }, stepTime + 0.8);
         }
-        
-        // 4. Highlight the tier label text
-        tl.to(`.tier-label-${i}`, { color: '#F0F0F0', scale: 1.05, x: 10, duration: 0.2 }, startTime);
-        
-        // 5. Un-highlight the tier label text
-        if (i < totalTiers - 1) {
-          tl.to(`.tier-label-${i}`, { color: 'rgba(240, 240, 240, 0.3)', scale: 1, x: 0, duration: 0.2 }, endTime - 0.2);
-        }
-      });
+      }
+
+      // Phase 5: Transition into Theatre (fade out elements)
+      const fadeOutTime = statesCount; 
+      tl.to('.dial-wrapper', { opacity: 0, y: -20, duration: 0.5 }, fadeOutTime);
+      tl.to('.phone-wrapper', { opacity: 0, scale: 0.95, duration: 0.5 }, fadeOutTime);
+      
+      // The statement text stays a bit longer, then fades out
+      tl.to('.statement-text', { opacity: 0, y: -30, duration: 0.5 }, fadeOutTime + 0.5);
+
+      // Add empty time at the end to allow for full fade out before section unpins
+      tl.to({}, { duration: 0.5 });
+      
     }, containerRef);
 
     return () => ctx.revert();
@@ -117,58 +101,86 @@ export default function SyndicateScene() {
     <section 
       ref={containerRef}
       data-theme="var(--color-et-velvet-amethyst)"
-      className="et-section et-scene-marker relative w-full h-[700vh] flex flex-col items-center justify-start overflow-hidden"
+      className="et-section et-scene-marker relative w-full h-[600vh] flex flex-col items-center justify-start z-10"
     >
-      <div className="syndicate-sticky h-[100dvh] flex flex-row items-center justify-between md:justify-center w-full max-w-6xl px-4 sm:px-6 gap-4 sm:gap-10 md:gap-20 pt-[10dvh]">
-        
-        {/* Physical Status Dial (Scroll driven) */}
-        <div className="relative flex flex-col items-start w-[80px] md:w-1/3 h-[70dvh] md:h-[600px]">
-          <p className="hidden md:block text-[10px] uppercase tracking-widest text-et-ivory/40 mb-12">The Syndicate</p>
+      <div className="syndicate-pin h-[100dvh] w-full flex items-center justify-center overflow-hidden px-4 md:px-12">
+        <div className="max-w-7xl mx-auto w-full h-full flex flex-col md:flex-row items-center justify-center md:justify-between py-[4dvh] sm:py-[8dvh] md:py-[15vh] gap-6 md:gap-0">
           
-          <div className="relative pl-6 md:pl-8 border-l border-et-ivory/10 py-4 flex flex-col justify-between h-full">
+          {/* LEFT: Statement & Dial */}
+          <div className="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left relative z-10 shrink-0 pr-0 md:pr-10">
+            <div className="statement-text">
+              <p className="text-et-muted-gold tracking-widest mb-2 md:mb-6 uppercase text-[10px] md:text-sm">05 &mdash; THE SYNDICATE</p>
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-display text-et-ivory tracking-[0.2em] font-light leading-snug">
+                OWNERSHIP<br className="hidden md:block" />CHANGES<br className="hidden md:block" />ACCESS.
+              </h2>
+            </div>
             
-            {/* Scroll-driven Selector */}
-            <div className="absolute left-[-16px] top-4 bottom-4 w-8">
-              <div className="syndicate-selector-dot absolute top-0 w-8 h-8 rounded-full border border-et-ivory flex items-center justify-center bg-et-velvet-amethyst z-10 -mt-4 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+            {/* Physical Status Dial */}
+            <div className="dial-wrapper flex flex-col items-start relative ml-0 md:ml-2 mt-6 md:mt-20 h-32 sm:h-40 md:h-64 justify-between w-max mx-auto md:mx-0 opacity-100">
+              
+              {/* Vertical Track Line */}
+              <div className="absolute left-[3px] top-2 bottom-2 w-[1px] bg-et-ivory/20" />
+              
+              {/* Moving Active Dot */}
+              <div className="active-dot absolute left-[-4px] top-0 w-4 h-4 rounded-full border border-et-ivory bg-[#160D1E] flex items-center justify-center shadow-[0_0_12px_rgba(255,255,255,0.3)] z-10 -mt-[4px]">
                 <div className="w-1.5 h-1.5 rounded-full bg-et-ivory" />
               </div>
-            </div>
 
-            {/* Labels */}
-            {STATUS_TIERS.map((tier, idx) => (
-              <div 
-                key={tier.id} 
-                className="flex flex-col justify-center h-full relative"
-              >
-                <h3 className={`tier-label-${idx} text-[9px] sm:text-xs md:text-sm tracking-[0.1em] md:tracking-[0.2em] font-mono text-[rgba(240,240,240,0.3)] origin-left whitespace-nowrap`} style={{ color: idx === 0 ? '#F0F0F0' : 'rgba(240,240,240,0.3)' }}>
-                  <span className="hidden md:inline">{tier.label}</span>
-                  <span className="md:hidden">{tier.label.substring(0, 3)}</span>
-                </h3>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Physical Phone Frame / UI */}
-        <div className="relative w-full max-w-[360px] h-[75dvh] md:h-[720px] max-h-[850px] rounded-[2.5rem] md:rounded-[3.5rem] border border-[#2a2a2a] glass-obsidian flex items-center justify-center shadow-2xl p-2 md:p-3 bg-[#111] shrink-0">
-          {/* Inner screen bezel */}
-          <div className="relative w-full h-full rounded-[2rem] md:rounded-[3rem] bg-[#050505] overflow-hidden border border-black/50 shadow-inner">
-            
-            {/* Dynamic UI Content based on Tier, mapped to scroll */}
-            {STATUS_TIERS.map((tier, idx) => {
-              const TemplateComponent = tier.Component;
-              return (
-                <div 
-                  key={tier.id}
-                  className={`tier-ui-${idx} absolute inset-0 w-full h-full overflow-y-auto hide-scrollbar bg-[#050505] [&>div]:!min-h-[720px] ${idx === 0 ? 'opacity-100' : 'opacity-0'}`}
-                >
-                  <TemplateComponent data={MOCK_PATRON_DATA} />
+              {STATES.map((state, i) => (
+                <div key={state} className={`dial-step-${i} relative flex items-center pl-8 w-full`}>
+                  <div className={`step-dot-${i} absolute left-[1px] top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-et-ivory/20 transition-colors`} />
+                  <p className={`step-text-${i} text-[9px] md:text-xs tracking-[0.3em] font-mono uppercase text-et-ivory/30 transform-gpu`}>
+                    {state}
+                  </p>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
+
+          {/* RIGHT: Minimal Phone Interface */}
+          <div className="w-full md:w-1/2 flex justify-center phone-wrapper opacity-100 shrink-0">
+            <div className="relative w-[240px] h-[480px] md:w-[280px] md:h-[580px] rounded-[2.5rem] md:rounded-[3rem] border border-[#222] bg-[#050505] shadow-2xl overflow-hidden p-2 md:p-4 flex flex-col shrink-0">
+              {/* Glass subtle gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+              
+              {/* Screen Bezel */}
+              <div className="relative flex-1 w-full rounded-[2rem] md:rounded-[2.2rem] bg-[#020202] border border-black/50 overflow-hidden shadow-inner flex flex-col items-center">
+                
+                <div className="w-full text-center mt-6 md:mt-8 z-20">
+                  <span className="text-et-ivory tracking-[0.3em] text-[9px] opacity-40">ET</span>
+                </div>
+
+                <div className="relative flex-1 w-full flex flex-col justify-center items-center">
+                  
+                  {/* STATE 0: STANDARD */}
+                  <div className="ui-state-0 absolute inset-0 opacity-100">
+                    <StandardUI />
+                  </div>
+
+                  {/* STATE 1: PRIVATE */}
+                  <div className="ui-state-1 absolute inset-0 opacity-0">
+                    <PrivateUI />
+                  </div>
+
+                  {/* STATE 2: VIP */}
+                  <div className="ui-state-2 absolute inset-0 opacity-0">
+                    <VIPUI />
+                  </div>
+
+                  {/* STATE 3: GENERATIONAL */}
+                  <div className="ui-state-3 absolute inset-0 opacity-0">
+                    <GenerationalUI />
+                  </div>
+
+                </div>
+
+                {/* Bottom line indicator */}
+                <div className="w-1/3 h-[2px] bg-white/20 rounded-full mx-auto mb-3 md:mb-4 z-20" />
+              </div>
+            </div>
+          </div>
+
         </div>
-        
       </div>
     </section>
   );

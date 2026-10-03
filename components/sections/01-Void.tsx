@@ -8,7 +8,7 @@ import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
 export default function HeroScene() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   const [sequenceFailed, setSequenceFailed] = useState(false);
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const currentFrame = useRef(0);
@@ -20,21 +20,21 @@ export default function HeroScene() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     const img = imagesRef.current[index];
     if (!img.complete || img.naturalWidth === 0) return;
-    
+
     const canvasWidth = window.innerWidth;
     const canvasHeight = window.innerHeight;
     const imgWidth = img.naturalWidth;
     const imgHeight = img.naturalHeight;
-    
+
     const ratio = Math.max(canvasWidth / imgWidth, canvasHeight / imgHeight);
     const newWidth = imgWidth * ratio;
     const newHeight = imgHeight * ratio;
     const offsetX = (canvasWidth - newWidth) / 2;
     const offsetY = (canvasHeight - newHeight) / 2;
-    
+
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     ctx.drawImage(img, offsetX, offsetY, newWidth, newHeight);
     currentFrame.current = index;
@@ -48,20 +48,20 @@ export default function HeroScene() {
       const img = new Image();
       const frameStr = i.toString().padStart(3, '0');
       img.src = `/v-1 frames/frame_${frameStr}.jpg`;
-      
+
       img.onload = () => {
         if (i === 1) {
-           renderFrame(0);
+          renderFrame(0);
         }
       };
-      
+
       img.onerror = () => {
         if (!failed) {
           failed = true;
           setSequenceFailed(true);
         }
       };
-      
+
       images.push(img);
     }
     imagesRef.current = images;
@@ -71,16 +71,16 @@ export default function HeroScene() {
         const dpr = window.devicePixelRatio || 1;
         canvasRef.current.width = window.innerWidth * dpr;
         canvasRef.current.height = window.innerHeight * dpr;
-        
+
         const ctx = canvasRef.current.getContext('2d');
         if (ctx) {
-           ctx.scale(dpr, dpr);
+          ctx.scale(dpr, dpr);
         }
-        
+
         renderFrame(currentFrame.current);
       }
     };
-    
+
     handleResize();
     window.addEventListener('resize', handleResize);
 
@@ -91,14 +91,15 @@ export default function HeroScene() {
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
-    
+
     let ctx = gsap.context(() => {
       ScrollTrigger.create({
         trigger: containerRef.current,
         start: 'top top',
         end: 'bottom bottom',
         pin: '.hero-sticky',
-        scrub: true,
+        pinSpacing: false,
+        scrub: 1.5,
       });
 
       if (!sequenceFailed) {
@@ -130,7 +131,7 @@ export default function HeroScene() {
             trigger: containerRef.current,
             start: 'top top',
             end: 'bottom bottom',
-            scrub: true,
+            scrub: 1.5,
           },
           onUpdate: updateFrame
         });
@@ -141,7 +142,7 @@ export default function HeroScene() {
   }, [sequenceFailed]);
 
   return (
-    <section 
+    <section
       ref={containerRef}
       data-theme="var(--color-et-dark-gold-onyx)"
       className="et-section et-scene-marker relative w-full h-[200vh]"
@@ -150,16 +151,16 @@ export default function HeroScene() {
         {/* VIDEO LAYER */}
         <div className="absolute inset-0 z-0 flex items-center justify-center mix-blend-screen overflow-hidden">
           {!sequenceFailed ? (
-            <canvas 
+            <canvas
               ref={canvasRef}
               className="w-full h-full object-cover opacity-60"
             />
           ) : (
-            <video 
-              src="/videos/v-1.mp4" 
-              autoPlay 
-              loop 
-              muted 
+            <video
+              src="/videos/v-1.mp4"
+              autoPlay
+              loop
+              muted
               playsInline
               className="w-full h-full object-cover opacity-60"
             />
@@ -168,7 +169,7 @@ export default function HeroScene() {
 
         {/* TYPOGRAPHY */}
         <div className="relative z-10 flex flex-col items-center justify-center text-center mt-[10vh]">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, delay: 2.5, ease: [0.22, 1, 0.36, 1] }}
@@ -176,7 +177,7 @@ export default function HeroScene() {
           >
             ET
           </motion.h1>
-          
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -188,13 +189,13 @@ export default function HeroScene() {
         </div>
 
         {/* INTERACTION */}
-        <motion.div 
+        <motion.div
           className="absolute bottom-24 z-20"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.5, delay: 4.5 }}
         >
-          <button 
+          <button
             className="interactive group relative overflow-hidden px-10 py-4 border border-et-ivory/20 rounded-none transition-all duration-700 hover:border-et-muted-gold/50"
             onClick={() => {
               // Smooth scroll to next section

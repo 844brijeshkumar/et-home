@@ -19,6 +19,7 @@ export default function RecognitionScene() {
         start: 'top top',
         end: 'bottom bottom',
         pin: '.recognition-sticky',
+        pinSpacing: false,
         scrub: true,
       });
 
@@ -50,7 +51,7 @@ export default function RecognitionScene() {
       <div className="recognition-sticky h-screen w-full flex items-center justify-center overflow-hidden">
         
         {/* VIDEO LAYER (Full Screen Cinematic) */}
-        <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden mix-blend-screen opacity-70 pointer-events-none">
+        <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
           <video 
             src="/videos/v-5.mp4" 
             autoPlay 
@@ -59,6 +60,7 @@ export default function RecognitionScene() {
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
           />
+          <div className="absolute inset-0 bg-black/30" />
         </div>
 
         {/* Narrative Overlays */}

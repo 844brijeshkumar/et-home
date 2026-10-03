@@ -103,7 +103,8 @@ export default function IdentityScene() {
         start: 'top top',
         end: 'bottom bottom',
         pin: '.identity-sticky',
-        scrub: true,
+        pinSpacing: false,
+        scrub: 1.5,
       });
 
       // Reveal network graph on scroll
@@ -159,7 +160,7 @@ export default function IdentityScene() {
             trigger: containerRef.current,
             start: 'top top',
             end: 'bottom bottom',
-            scrub: true,
+            scrub: 1.5,
           },
           onUpdate: updateFrame
         });
