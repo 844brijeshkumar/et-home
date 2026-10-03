@@ -50,4 +50,10 @@
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* Custom Cursor Hover States */
+  body:has(button:hover, a:hover, .interactive:hover) .custom-cursor-inner {
+    transform: scale(2.5);
+    opacity: 0.5;
+  }
 }

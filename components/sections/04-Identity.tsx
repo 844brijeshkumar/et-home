@@ -11,19 +11,39 @@ export default function IdentityScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const [sequenceFailed, setSequenceFailed] = useState(false);
-  const imagesRef = useRef<HTMLImageElement[]>([]);
+  // Store loaded image objects keyed by frame index (0-based)
+  const imagesRef = useRef<Map<number, HTMLImageElement>>(new Map());
   const currentFrame = useRef(0);
   const FRAME_COUNT = 480;
 
+  // Find the closest loaded frame to the requested index to prevent blank flashes
+  const getClosestFrame = (targetIndex: number) => {
+    const loadedFrames = Array.from(imagesRef.current.keys()).sort((a, b) => a - b);
+    if (loadedFrames.length === 0) return null;
+    
+    let closest = loadedFrames[0];
+    let minDiff = Math.abs(targetIndex - closest);
+    
+    for (const frame of loadedFrames) {
+      const diff = Math.abs(targetIndex - frame);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = frame;
+      }
+    }
+    return imagesRef.current.get(closest);
+  };
+
   // Frame Rendering Logic
   const renderFrame = (index: number) => {
-    if (!canvasRef.current || !imagesRef.current[index]) return;
+    if (!canvasRef.current) return;
+    
+    const img = getClosestFrame(index);
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+    
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
-    const img = imagesRef.current[index];
-    if (!img.complete || img.naturalWidth === 0) return;
     
     const canvasWidth = window.innerWidth;
     const canvasHeight = window.innerHeight;
@@ -42,34 +62,71 @@ export default function IdentityScene() {
   };
 
   useEffect(() => {
-    // 1. Image Preloading
     let failed = false;
-    const images: HTMLImageElement[] = [];
+    let priority1LoadedCount = 0;
+    
+    // Priority 1: Keyframes (every 10th frame) to quickly get a scrubbable sparse sequence
+    const priority1: number[] = [];
+    // Priority 2: The rest of the frames to fill the gaps
+    const priority2: number[] = [];
 
     for (let i = 1; i <= FRAME_COUNT; i++) {
-      const img = new Image();
-      const frameStr = i.toString().padStart(3, '0');
-      img.src = `/v-3 frames/frame_${frameStr}.jpg`;
-      
-      img.onload = () => {
-        // Render the first frame immediately once loaded
-        if (i === 1) {
-           renderFrame(0);
-        }
-      };
-      
-      img.onerror = () => {
-        if (!failed) {
-          failed = true;
-          setSequenceFailed(true);
-        }
-      };
-      
-      images.push(img);
+      if (i === 1 || i === FRAME_COUNT || i % 10 === 0) {
+        priority1.push(i);
+      } else {
+        priority2.push(i);
+      }
     }
-    imagesRef.current = images;
 
-    // 2. Setup Canvas Resize
+    const loadFrame = (frameNum: number): Promise<void> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const frameStr = frameNum.toString().padStart(3, '0');
+        img.src = `/v-3 frames/frame_${frameStr}.jpg`;
+
+        img.onload = () => {
+          imagesRef.current.set(frameNum - 1, img); // 0-indexed internally
+          if (frameNum === 1) renderFrame(0);
+          resolve();
+        };
+
+        img.onerror = () => {
+          if (!failed) {
+            failed = true;
+            setSequenceFailed(true);
+          }
+          resolve(); // Resolve anyway so we don't stall the loading sequence
+        };
+      });
+    };
+
+    const loadPriority1 = async () => {
+      // Load Priority 1 concurrently (~50 frames)
+      const promises = priority1.map(frameNum => 
+        loadFrame(frameNum).then(() => {
+          priority1LoadedCount++;
+          if (priority1LoadedCount === priority1.length) {
+            // Priority 1 done, quietly start loading priority 2
+            loadPriority2();
+          }
+        })
+      );
+      await Promise.all(promises);
+    };
+
+    const loadPriority2 = async () => {
+      // Load remaining frames in batches of 10 to avoid choking the network
+      const batchSize = 10;
+      for (let i = 0; i < priority2.length; i += batchSize) {
+        if (failed) break;
+        const batch = priority2.slice(i, i + batchSize);
+        await Promise.all(batch.map(loadFrame));
+      }
+    };
+
+    loadPriority1();
+
+    // Setup Canvas Resize
     const handleResize = () => {
       if (canvasRef.current) {
         const dpr = window.devicePixelRatio || 1;
@@ -104,7 +161,7 @@ export default function IdentityScene() {
         end: 'bottom bottom',
         pin: '.identity-sticky',
         pinSpacing: false,
-        scrub: 1.5,
+        scrub: true,
       });
 
       // Reveal network graph on scroll
@@ -117,7 +174,7 @@ export default function IdentityScene() {
             trigger: networkRef.current,
             start: 'top 70%',
             end: 'bottom 40%',
-            scrub: 1
+            scrub: true
           }
         });
 
@@ -160,7 +217,7 @@ export default function IdentityScene() {
             trigger: containerRef.current,
             start: 'top top',
             end: 'bottom bottom',
-            scrub: 1.5,
+            scrub: true,
           },
           onUpdate: updateFrame
         });

@@ -28,7 +28,7 @@ export default function ReserveScene() {
           trigger: containerRef.current,
           start: 'top 40%',
           end: 'bottom 40%',
-          scrub: 1
+          scrub: true
         }
       });
 

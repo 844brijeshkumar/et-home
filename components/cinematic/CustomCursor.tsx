@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 export default function CustomCursor() {
@@ -10,40 +10,26 @@ export default function CustomCursor() {
   const springConfig = { damping: 28, stiffness: 500, mass: 0.5 };
   const cursorXSpring = useSpring(cursorX, springConfig);
   const cursorYSpring = useSpring(cursorY, springConfig);
-  
-  const [isHovering, setIsHovering] = useState(false);
 
   useEffect(() => {
+    let ticking = false;
+    
     const updateMousePosition = (e: MouseEvent) => {
       cursorX.set(e.clientX - 6);
       cursorY.set(e.clientY - 6);
       
-      // Update global CSS variables for spotlight effect globally without React renders
-      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
-      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
-    };
-
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName.toLowerCase() === 'button' ||
-        target.tagName.toLowerCase() === 'a' ||
-        target.closest('button') ||
-        target.closest('a') ||
-        target.classList.contains('interactive')
-      ) {
-        setIsHovering(true);
-      } else {
-        setIsHovering(false);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
-    window.addEventListener('mousemove', updateMousePosition);
-    window.addEventListener('mouseover', handleMouseOver);
+    window.addEventListener('mousemove', updateMousePosition, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', updateMousePosition);
-      window.removeEventListener('mouseover', handleMouseOver);
     };
   }, [cursorX, cursorY]);
 
@@ -53,19 +39,14 @@ export default function CustomCursor() {
   }
 
   return (
-    <>
-      <motion.div
-        className="fixed top-0 left-0 w-3 h-3 bg-et-ivory rounded-full pointer-events-none z-[9999] mix-blend-difference"
-        style={{
-          x: cursorXSpring,
-          y: cursorYSpring,
-        }}
-        animate={{
-          scale: isHovering ? 2.5 : 1,
-          opacity: isHovering ? 0.5 : 1,
-        }}
-        transition={{ type: 'spring', stiffness: 500, damping: 28, mass: 0.5 }}
-      />
-    </>
+    <motion.div
+      className="fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference"
+      style={{
+        x: cursorXSpring,
+        y: cursorYSpring,
+      }}
+    >
+      <div className="w-3 h-3 bg-et-ivory rounded-full custom-cursor-inner transition-all duration-300 origin-center" />
+    </motion.div>
   );
 }

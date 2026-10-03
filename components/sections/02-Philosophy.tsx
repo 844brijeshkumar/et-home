@@ -13,36 +13,36 @@ export default function PhilosophyScene() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
     
-    // Animate text elements sequentially on scroll
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: 'top 60%',
-        end: 'bottom 40%',
-        scrub: 1, // Smooth scrubbing
-      }
-    });
+    let ctx = gsap.context(() => {
+      // Animate text elements sequentially on scroll
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top 60%',
+          end: 'bottom 40%',
+          scrub: true, // Tight scrubbing
+        }
+      });
 
-    tl.fromTo(text1Ref.current, 
-      { opacity: 0, y: 30 }, 
-      { opacity: 1, y: 0, duration: 1 }
-    )
-    .to(text1Ref.current, { opacity: 0.3, duration: 0.5 }, "+=0.5")
-    .fromTo(text2Ref.current, 
-      { opacity: 0, y: 30 }, 
-      { opacity: 1, y: 0, duration: 1 }, 
-      "-=0.2"
-    )
-    .to(text2Ref.current, { opacity: 0.3, duration: 0.5 }, "+=0.5")
-    .fromTo(text3Ref.current, 
-      { opacity: 0, y: 30 }, 
-      { opacity: 1, y: 0, duration: 1, color: 'var(--color-et-ivory)' }, 
-      "-=0.2"
-    );
+      tl.fromTo(text1Ref.current, 
+        { opacity: 0, y: 30 }, 
+        { opacity: 1, y: 0, duration: 1 }
+      )
+      .to(text1Ref.current, { opacity: 0.3, duration: 0.5 }, "+=0.5")
+      .fromTo(text2Ref.current, 
+        { opacity: 0, y: 30 }, 
+        { opacity: 1, y: 0, duration: 1 }, 
+        "-=0.2"
+      )
+      .to(text2Ref.current, { opacity: 0.3, duration: 0.5 }, "+=0.5")
+      .fromTo(text3Ref.current, 
+        { opacity: 0, y: 30 }, 
+        { opacity: 1, y: 0, duration: 1, color: 'var(--color-et-ivory)' }, 
+        "-=0.2"
+      );
+    }, containerRef);
 
-    return () => {
-      ScrollTrigger.getAll().forEach(t => t.kill());
-    };
+    return () => ctx.revert();
   }, []);
 
   return (

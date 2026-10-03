@@ -12,17 +12,23 @@ export function useMousePosition() {
       return;
     }
 
+    let ticking = false;
+
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isEnabled.current) return;
+      if (!isEnabled.current || ticking) return;
       
       const x = e.clientX;
       const y = e.clientY;
 
-      document.documentElement.style.setProperty('--mouse-x', `${x}px`);
-      document.documentElement.style.setProperty('--mouse-y', `${y}px`);
+      ticking = true;
+      requestAnimationFrame(() => {
+        document.documentElement.style.setProperty('--mouse-x', `${x}px`);
+        document.documentElement.style.setProperty('--mouse-y', `${y}px`);
+        ticking = false;
+      });
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);

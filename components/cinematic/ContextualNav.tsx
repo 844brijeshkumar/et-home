@@ -69,7 +69,7 @@ export default function ContextualNav() {
             >
               {item.label}
             </motion.span>
-            <span className={`text-[10px] font-mono transition-colors duration-300 ${activeSection === index ? 'text-et-ivory' : 'text-et-ivory/30 group-hover:text-et-ivory/60'}`}>
+            <span className={`text-[10px] font-mono transition-colors duration-300 ${activeSection === index ? 'text-et-ivory' : 'text-et-ivory/50 group-hover:text-et-ivory/80'}`}>
               {item.id}
             </span>
           </div>

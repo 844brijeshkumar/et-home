@@ -10,19 +10,40 @@ export default function HeroScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [sequenceFailed, setSequenceFailed] = useState(false);
-  const imagesRef = useRef<HTMLImageElement[]>([]);
+  
+  // Store loaded image objects keyed by frame index (0-based)
+  const imagesRef = useRef<Map<number, HTMLImageElement>>(new Map());
   const currentFrame = useRef(0);
   const FRAME_COUNT = 240;
 
+  // Find the closest loaded frame to the requested index to prevent blank flashes
+  const getClosestFrame = (targetIndex: number) => {
+    const loadedFrames = Array.from(imagesRef.current.keys()).sort((a, b) => a - b);
+    if (loadedFrames.length === 0) return null;
+    
+    let closest = loadedFrames[0];
+    let minDiff = Math.abs(targetIndex - closest);
+    
+    for (const frame of loadedFrames) {
+      const diff = Math.abs(targetIndex - frame);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = frame;
+      }
+    }
+    return imagesRef.current.get(closest);
+  };
+
   // Frame Rendering Logic
   const renderFrame = (index: number) => {
-    if (!canvasRef.current || !imagesRef.current[index]) return;
+    if (!canvasRef.current) return;
+    
+    const img = getClosestFrame(index);
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    const img = imagesRef.current[index];
-    if (!img.complete || img.naturalWidth === 0) return;
 
     const canvasWidth = window.innerWidth;
     const canvasHeight = window.innerHeight;
@@ -42,29 +63,69 @@ export default function HeroScene() {
 
   useEffect(() => {
     let failed = false;
-    const images: HTMLImageElement[] = [];
+    let priority1LoadedCount = 0;
+    
+    // Priority 1: Keyframes (every 10th frame) to quickly get a scrubbable sparse sequence
+    const priority1: number[] = [];
+    // Priority 2: The rest of the frames to fill the gaps
+    const priority2: number[] = [];
 
     for (let i = 1; i <= FRAME_COUNT; i++) {
-      const img = new Image();
-      const frameStr = i.toString().padStart(3, '0');
-      img.src = `/v-1 frames/frame_${frameStr}.jpg`;
-
-      img.onload = () => {
-        if (i === 1) {
-          renderFrame(0);
-        }
-      };
-
-      img.onerror = () => {
-        if (!failed) {
-          failed = true;
-          setSequenceFailed(true);
-        }
-      };
-
-      images.push(img);
+      if (i === 1 || i === FRAME_COUNT || i % 10 === 0) {
+        priority1.push(i);
+      } else {
+        priority2.push(i);
+      }
     }
-    imagesRef.current = images;
+
+    const loadFrame = (frameNum: number): Promise<void> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const frameStr = frameNum.toString().padStart(3, '0');
+        img.src = `/v-1 frames/frame_${frameStr}.jpg`;
+
+        img.onload = () => {
+          imagesRef.current.set(frameNum - 1, img); // 0-indexed internally
+          if (frameNum === 1) renderFrame(0);
+          resolve();
+        };
+
+        img.onerror = () => {
+          if (!failed) {
+            failed = true;
+            setSequenceFailed(true);
+          }
+          resolve(); // Resolve anyway so we don't stall the loading sequence
+        };
+      });
+    };
+
+    const loadPriority1 = async () => {
+      // Load Priority 1 concurrently (~25 frames)
+      const promises = priority1.map(frameNum => 
+        loadFrame(frameNum).then(() => {
+          priority1LoadedCount++;
+          // Dispatch heroLoaded when all keyframes are ready so Preloader can fade out
+          if (priority1LoadedCount === priority1.length) {
+            window.dispatchEvent(new Event('heroLoaded'));
+            loadPriority2();
+          }
+        })
+      );
+      await Promise.all(promises);
+    };
+
+    const loadPriority2 = async () => {
+      // Load remaining frames in batches to avoid choking the network
+      const batchSize = 10;
+      for (let i = 0; i < priority2.length; i += batchSize) {
+        if (failed) break;
+        const batch = priority2.slice(i, i + batchSize);
+        await Promise.all(batch.map(loadFrame));
+      }
+    };
+
+    loadPriority1();
 
     const handleResize = () => {
       if (canvasRef.current) {
@@ -99,7 +160,7 @@ export default function HeroScene() {
         end: 'bottom bottom',
         pin: '.hero-sticky',
         pinSpacing: false,
-        scrub: 1.5,
+        scrub: true,
       });
 
       if (!sequenceFailed) {
@@ -107,14 +168,14 @@ export default function HeroScene() {
         const idleObj = { frame: 0 };
 
         const updateFrame = () => {
-          // Combine idle and scroll progress
           const totalFrame = Math.round(scrollObj.frame) + Math.floor(idleObj.frame);
           let finalFrame = totalFrame % FRAME_COUNT;
           if (finalFrame < 0) finalFrame += FRAME_COUNT;
+          
           renderFrame(finalFrame);
         };
 
-        // Idle autoplay (24fps for 240 frames = 10s)
+        // Idle autoplay
         gsap.to(idleObj, {
           frame: FRAME_COUNT,
           duration: 10,
@@ -123,7 +184,7 @@ export default function HeroScene() {
           onUpdate: updateFrame
         });
 
-        // Scroll scrubbing (advances 1 full loop over the scroll distance)
+        // Scroll scrubbing
         gsap.to(scrollObj, {
           frame: FRAME_COUNT,
           ease: 'none',
@@ -131,7 +192,7 @@ export default function HeroScene() {
             trigger: containerRef.current,
             start: 'top top',
             end: 'bottom bottom',
-            scrub: 1.5,
+            scrub: true, // Tied to smooth lenis scroll
           },
           onUpdate: updateFrame
         });
@@ -148,8 +209,8 @@ export default function HeroScene() {
       className="et-section et-scene-marker relative w-full h-[200vh]"
     >
       <div className="hero-sticky relative w-full h-screen flex flex-col items-center justify-center overflow-hidden">
-        {/* VIDEO LAYER */}
-        <div className="absolute inset-0 z-0 flex items-center justify-center mix-blend-screen overflow-hidden">
+        {/* CANVAS SEQUENCE LAYER */}
+        <div className="absolute inset-0 z-0 flex items-center justify-center mix-blend-screen overflow-hidden bg-et-dark-gold-onyx">
           {!sequenceFailed ? (
             <canvas
               ref={canvasRef}
@@ -168,11 +229,11 @@ export default function HeroScene() {
         </div>
 
         {/* TYPOGRAPHY */}
-        <div className="relative z-10 flex flex-col items-center justify-center text-center mt-[10vh]">
+        <div className="relative z-10 flex flex-col items-center justify-center text-center mt-[10vh] pointer-events-none">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.5, delay: 2.5, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 1.5, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="font-display text-7xl md:text-9xl tracking-widest text-et-ivory font-light mb-8"
           >
             ET
@@ -181,7 +242,7 @@ export default function HeroScene() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1.5, delay: 3.5 }}
+            transition={{ duration: 1.5, delay: 1.5 }}
             className="text-sm md:text-base tracking-[0.3em] font-light text-et-ivory/80 uppercase"
           >
             Objects with identity.
@@ -193,12 +254,11 @@ export default function HeroScene() {
           className="absolute bottom-24 z-20"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.5, delay: 4.5 }}
+          transition={{ duration: 1.5, delay: 2.5 }}
         >
           <button
             className="interactive group relative overflow-hidden px-10 py-4 border border-et-ivory/20 rounded-none transition-all duration-700 hover:border-et-muted-gold/50"
             onClick={() => {
-              // Smooth scroll to next section
               window.scrollTo({
                 top: containerRef.current ? containerRef.current.offsetTop + containerRef.current.offsetHeight : window.innerHeight,
                 behavior: 'smooth'

@@ -7,11 +7,22 @@ export default function Preloader() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading time, or tie to actual asset loading
-    const timer = setTimeout(() => {
+    // Wait for the hero section to signal it's loaded, with a fallback timeout
+    const fallbackTimer = setTimeout(() => {
       setIsLoading(false);
-    }, 2500);
-    return () => clearTimeout(timer);
+    }, 8000);
+
+    const handleHeroLoaded = () => {
+      setIsLoading(false);
+      clearTimeout(fallbackTimer);
+    };
+
+    window.addEventListener('heroLoaded', handleHeroLoaded);
+
+    return () => {
+      clearTimeout(fallbackTimer);
+      window.removeEventListener('heroLoaded', handleHeroLoaded);
+    };
   }, []);
 
   return (
@@ -36,7 +47,7 @@ export default function Preloader() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
             transition={{ duration: 1, delay: 0.8 }}
-            className="text-[10px] tracking-[0.3em] uppercase text-et-ivory/50"
+            className="text-[10px] tracking-[0.3em] uppercase text-et-ivory/70"
           >
             Initializing
           </motion.p>

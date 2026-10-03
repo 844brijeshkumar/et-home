@@ -42,7 +42,7 @@ export default function VaultScene() {
           trigger: containerRef.current,
           start: 'top top',
           end: 'bottom bottom',
-          scrub: 1,
+          scrub: true,
           invalidateOnRefresh: true, // Crucial for mobile resize/orientation changes
         }
       });
@@ -74,7 +74,7 @@ export default function VaultScene() {
 
         {/* Section Header */}
         <div className="absolute top-12 left-12 z-20">
-          <p className="text-[10px] tracking-[0.2em] uppercase text-et-ivory/50">The Vault</p>
+          <p className="text-[10px] tracking-[0.2em] uppercase text-et-ivory/70">The Vault</p>
           <div className="h-[1px] w-8 bg-et-ivory/20 my-2" />
           <p className="text-[10px] font-mono text-et-ivory">ET Collection</p>
         </div>
@@ -104,7 +104,7 @@ export default function VaultScene() {
                     <span className="text-[10px] tracking-widest uppercase text-et-ivory opacity-50">{item.type}</span>
                   </div>
                   <h3 className="font-display text-3xl text-et-ivory mb-2">{item.title}</h3>
-                  <p className="text-[10px] tracking-widest uppercase text-et-ivory/50 leading-relaxed max-w-[80%]">
+                  <p className="text-[10px] tracking-widest uppercase text-et-ivory/70 leading-relaxed max-w-[80%]">
                     {item.desc}
                   </p>
                 </div>

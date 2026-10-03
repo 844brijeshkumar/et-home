@@ -42,12 +42,12 @@ export default function InvitationScene() {
               <h2 className="font-display text-3xl md:text-5xl text-et-ivory font-light mb-4">
                 YOU HAVE SEEN THE OBJECT.
               </h2>
-              <h2 className="font-display text-3xl md:text-5xl text-et-ivory/50 font-light italic mb-24">
+              <h2 className="font-display text-3xl md:text-5xl text-et-ivory/70 font-light italic mb-24">
                 NOW ENTER THE WORLD.
               </h2>
               
               <div className="w-full max-w-sm flex flex-col gap-6">
-                <p className="text-[10px] tracking-[0.3em] uppercase text-et-ivory/60 mb-2">
+                <p className="text-[10px] tracking-[0.3em] uppercase text-et-ivory/80 mb-2">
                   Request Showroom Coordinates
                 </p>
                 
@@ -83,7 +83,7 @@ export default function InvitationScene() {
               <h3 className="font-mono text-sm tracking-[0.4em] text-et-muted-gold uppercase mb-8">
                 INVITATION REQUESTED
               </h3>
-              <p className="font-display text-2xl text-et-ivory/60 font-light italic">
+              <p className="font-display text-2xl text-et-ivory/80 font-light italic">
                 Further coordinates will follow.
               </p>
             </motion.div>
